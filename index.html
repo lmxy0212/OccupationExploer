@@ -1,0 +1,405 @@
+<head>
+  <style> body { margin: 0; } </style>
+
+  <script src="//unpkg.com/three"></script>
+  <script src="//unpkg.com/dat.gui"></script> 
+  <script src="//unpkg.com/three-spritetext"></script>
+
+  <script src="//unpkg.com/3d-force-graph"></script>
+
+  <!-- <script src="dataformating-avg.js"></script> -->
+
+  <script src="dataformating-worktasks.js"></script>
+  <!-- <script src="dataformating-skill_knowledge.js"></script> --> 
+  <!-- <script src="dataformating-interestvalue.js"></script> -->
+  <!-- <script src="dataformating-customized.js"></script> -->
+
+</head>
+
+<body>
+  <div id="3d-graph"></div>
+  <div style="position: fixed; top: 0; width: 100%; background-color: transparent; color: #fff; text-align: center; padding: 0; margin-top: 20px;">
+    <input type="text" id="searchInput" placeholder="Enter node ID...">
+    <button class="bottom-button" onclick="searchNode()">SubGraph</button>
+    <button class="bottom-button" onclick="locateNode()">Locate</button>
+    <button class="bottom-button" onclick="resetGraph()">Reset</button>
+  </div>
+ 
+  
+  <style>
+    #searchInput {
+      margin: 0 10px;
+      padding: 5px;
+      width: 150px;
+      border-radius: 5px;
+      border: none;
+      background-color: rgba(51, 51, 51, 0.4);
+      color: #fff;
+    }
+
+    .bottom-button {
+      margin: 0 10px;
+      padding: 5px 15px;
+      width: 100px;
+      background-color: rgba(51, 51, 51, 0.4);
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.5s;
+    }
+    .slider-container {
+    margin-bottom: 20px;
+      }
+
+      label, output {
+          display: block;
+          text-align: center;
+          margin-bottom: 10px;
+      }
+
+      input[type=range] {
+          width: 80%;
+          margin-bottom: 20px;
+      }
+  </style>
+
+<script type="importmap">{ "imports": { "three": "//unpkg.com/three/build/three.module.js" }}</script>
+<script type="module">
+  import { UnrealBloomPass } from '//unpkg.com/three/examples/jsm/postprocessing/UnrealBloomPass.js';
+  
+  // Initialize the graph
+  let Graph = window.Graph;
+  applyUnrealBloomPass();
+
+  function applyUnrealBloomPass() {
+    const bloomPass = new UnrealBloomPass();
+    bloomPass.strength = 1.3;
+    bloomPass.radius = 0.3;
+    bloomPass.threshold = 0;
+    Graph.postProcessingComposer().addPass(bloomPass);
+  }
+</script>
+<script>
+  //  const highlightColor = "#C55A11"; // orange
+  //  const highlightColor = "lime"; // neon green
+   const highlightColor = "#A9FFE0"; // Aquamarine
+   
+
+   const highlightNodes = new Set();
+   window.Graph = ForceGraph3D({ controlType: 'fly' });
+  
+   initializeForceGraph(window.transformedData);
+
+   
+    const originalGraphData = JSON.parse(JSON.stringify(window.transformedData));
+
+    //Define GUI
+    const Settings = function() {
+      this.strength = 20;
+    };
+
+    const linkForce = Graph
+      .d3Force('link')
+      .distance(link => settings.strength);
+
+    const colorParam = {
+      backgroundColor: Graph.backgroundColor(),
+    };
+
+    const settings = new Settings();
+    const gui = new dat.GUI();
+
+    const controllerOne = gui.add(settings, 'strength', 0, 100);
+    const controller2 = gui.addColor(colorParam, 'backgroundColor').onChange((value) => Graph.backgroundColor(value.toString()));
+
+    controllerOne.onChange(updateLinkDistance);
+
+    let selectedNode = null;
+    let selectedLinks = [];
+    function initializeForceGraph(data){
+      Graph = ForceGraph3D()
+      // .backgroundColor('#101020')
+      .backgroundColor('#000001')
+        (document.getElementById('3d-graph'))
+          .graphData(data)
+          .nodeAutoColorBy('group')
+          .nodeThreeObject(node => {
+            const sprite = new SpriteText(node.id);
+            sprite.material.depthWrite = false; // make sprite background transparent
+            node.originalColor = node.color;
+            sprite.color = node === selectedNode ? highlightColor : node.color;
+            sprite.textHeight = 4;
+            return sprite;
+          })
+          .onNodeClick(node => {
+            // Aim at node from outside it
+            const distance = 150;
+            const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+
+            const newPos = node.x || node.y || node.z
+              ? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
+              : { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
+
+              Graph.graphData().nodes.forEach(n => {
+              if (n.__threeObj && n.originalColor) {
+                n.__threeObj.material.color.set(n.originalColor);
+                node.__threeObj.material.opacity = 1;
+                }
+              });
+              Graph.graphData().links.forEach(l => {
+                if(l.originalColor){
+                  l.color = l.originalColor;
+                  console.log(l.color);
+                  selectedLinks = [];
+                }else{
+                  l.originalColor = l.color;
+                  selectedLinks = [];
+                }
+              });
+
+              // If clicking on the already selected node, deselect it and exit the function
+              if (node === selectedNode) {
+                selectedNode = null;
+                selectedLinks = [];
+                Graph.refresh();  // Refresh the graph to apply the original colors
+                return;
+              }
+                // Highlight the selected node
+                node.originalColor = node.color;
+                node.__threeObj.material.color.set(highlightColor); 
+                selectedNode = node;
+
+                // Highlight and store all links connected to the selected node
+                Graph.graphData().links.forEach(link => {
+                  if (link.source === selectedNode || link.target === selectedNode) {
+                    console.log(link.color);
+                    link.originalColor = link.color;
+                    link.color = highlightColor; 
+                    selectedLinks.push(link);
+                  }
+                });
+                // Dim all other nodes and links
+                Graph.graphData().nodes.forEach(n => {
+                  if (n !== selectedNode && n.__threeObj) {
+                    n.__threeObj.material.opacity = 0.1;
+                  }
+                });
+                Graph.graphData().links.forEach(l => {
+                  if (!selectedLinks.includes(l) && l.__lineObj) {
+                    l.color = "#4c4c4c";
+                  }
+                });
+
+  // Refresh link colors in the graph
+  Graph.linkColor(link => link.color);
+
+            console.log('onclick',node.id);
+            Graph.cameraPosition(
+              newPos, // new position
+              node, // lookAt ({ x, y, z })
+              3000  // ms transition duration
+            );
+          });
+}
+
+    function recolorNode(node, color){
+      if (selectedNode) {
+        selectedNode.__threeObj.material.color.set(selectedNode.originalColor);
+      }
+
+      // Store original color and update to highlight color
+      node.originalColor = node.color;
+      node.__threeObj.material.color.set(color); 
+      // Store reference to selected node
+      selectedNode = node;
+    }
+
+    function updateLinkDistance() {
+      linkForce.distance(link => settings.strength);
+      Graph.numDimensions(3); // Re-heat simulation
+    }
+
+    function resetGraph() {
+      // Remove circles
+      const scene = Graph.scene();
+      const centerCircle = scene.getObjectByName('centerCircle');
+      const outerCircle = scene.getObjectByName('outerCircle');
+      const innerCircle = scene.getObjectByName('innerCircle');
+      if (centerCircle) scene.remove(centerCircle);
+      if (outerCircle) scene.remove(outerCircle);
+      if (innerCircle) scene.remove(innerCircle);
+      Graph.graphData(JSON.parse(JSON.stringify(originalGraphData)));
+      Graph.nodeThreeObject();
+      Graph.numDimensions(3);
+      Graph.cameraPosition({ x: 0, y: 0, z: 1000 }, { x: 0, y: 0, z: 0 }, 1000);
+    }
+
+    const highlightLinks = new Set();
+
+  function zoominToNode(node, distance){
+    const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+    const newPos = node.x || node.y || node.z
+      ? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
+      : { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
+
+    Graph.cameraPosition(
+      newPos, 
+      node,
+      3000  
+    );
+  }
+  function locateNode(){
+    let targetNode;
+    const nodeId = document.getElementById('searchInput').value;
+    if(nodeId){
+      const graphData = Graph.graphData();
+      targetNode = graphData.nodes.find(node => node.id === nodeId);
+    }else{
+      targetNode = selectedNode;
+    }
+    console.log("locating");
+    if (targetNode) {
+      zoominToNode(targetNode, 150);
+    }else {
+        console.log(`Node with ID ${nodeId} not found!`);
+    }
+
+    
+  }
+  function searchNode() {
+    let targetNode;
+    const graphData = Graph.graphData();
+    if(selectedNode){
+      targetNode = selectedNode;
+    }else{
+      const nodeId = document.getElementById('searchInput').value;
+      targetNode = graphData.nodes.find(node => node.id === nodeId);
+    }
+    
+    if (targetNode) {
+      let connectedLinks = graphData.links.filter(link => 
+            (link.source.id || link.source) === targetNode.id || 
+            (link.target.id || link.target) === targetNode.id
+        ).sort((a, b) => a.value - b.value);
+
+        connectedLinks = connectedLinks.slice(0, 10);
+
+        const neighbors = connectedLinks.map(link => 
+            (link.source.id || link.source) === targetNode.id ? link.target : link.source
+        );
+
+        const secondDegreeLinks = graphData.links.filter(link => 
+            neighbors.some(neighbor => 
+                (link.source.id || link.source) === neighbor.id || 
+                (link.target.id || link.target) === neighbor.id
+            )
+        ).sort((a, b) => a.value - b.value);
+
+        const secondDegreeNeighbors = [];
+        neighbors.some(neighbor => {
+            const relevantLinks = secondDegreeLinks.filter(link => 
+                (link.source.id || link.source) === neighbor.id || 
+                (link.target.id || link.target) === neighbor.id
+            );
+
+            return relevantLinks.some(link => {
+                const secondDegreeNeighbor = (link.source.id || link.source) === neighbor.id ? link.target : link.source;
+                if (!neighbors.includes(secondDegreeNeighbor) && secondDegreeNeighbor !== targetNode && !secondDegreeNeighbors.includes(secondDegreeNeighbor)) {
+                    secondDegreeNeighbors.push(secondDegreeNeighbor);
+                }
+                // Break if we have found 20 second-degree neighbors
+                return secondDegreeNeighbors.length === 20;
+            });
+        });
+
+        const allNodesToShow = [targetNode, ...neighbors, ...secondDegreeNeighbors];
+        const allLinksToShow = [];
+
+        graphData.nodes = graphData.nodes.filter(node => allNodesToShow.includes(node));
+        graphData.links = allLinksToShow;
+
+        Graph.graphData(graphData);
+        positionNodes(targetNode, neighbors, secondDegreeNeighbors);
+        zoominToNode(targetNode, 500);
+        
+    }  else {
+        console.log(`Node with ID ${targetNode.id} not found!`);
+    }
+}
+
+
+  function positionNodes(centerNode, firstCircleNodes, secondCircleNodes) {
+    // Position the center node
+    centerNode.x = 0;
+    centerNode.y = 0;
+    centerNode.z = 0;
+    centerNode.fx = centerNode.x;
+    centerNode.fy = centerNode.y;
+    centerNode.fz = centerNode.z;
+
+    // Position the first circle nodes
+    const firstCircleRadius = 100; // Adjust as needed
+    firstCircleNodes.forEach((node, idx, arr) => {
+        const angle = (idx / arr.length) * 2 * Math.PI;
+        node.x = centerNode.fx + firstCircleRadius * Math.cos(angle);
+        node.y = centerNode.fy + firstCircleRadius * Math.sin(angle);
+        node.z = 0;
+        node.fx = node.x;
+        node.fy = node.y;
+        node.fz = node.z;
+    });
+
+    // Position the second circle nodes
+    const secondCircleRadius = 200; // Adjust as needed
+    secondCircleNodes.forEach((node, idx, arr) => {
+        const angle = (idx / arr.length) * 2 * Math.PI;
+        node.x = centerNode.fx + secondCircleRadius * Math.cos(angle);
+        node.y = centerNode.fy + secondCircleRadius * Math.sin(angle);
+        node.z = 0;
+        node.fx = node.x;
+        node.fy = node.y;
+        node.fz = node.z;
+    });
+    console.log("Center Node Position:", centerNode);
+    console.log("First Circle Nodes Position:", firstCircleNodes);
+    console.log("Second Circle Nodes Position:", secondCircleNodes);
+    // Manually refresh the graph
+    Graph.d3ReheatSimulation();
+    // Graph.refresh();
+
+     // Create circle geometries
+    const geometry3 = new THREE.CircleGeometry(secondCircleRadius, 500); 
+    const geometry1 = new THREE.CircleGeometry(firstCircleRadius, 500); 
+    const geometry2 = new THREE.CircleGeometry(50, 500); 
+    
+    // Create material
+    const material = new THREE.LineBasicMaterial({ color: 0x202051 });
+    
+    // Create edge geometries
+    const edges1 = new THREE.EdgesGeometry(geometry1);
+    const edges2 = new THREE.EdgesGeometry(geometry2);
+    const edges3 = new THREE.EdgesGeometry(geometry3);
+    
+    // Create line segments (wireframe circles)
+    const circle1 = new THREE.LineSegments(edges1, material);
+    const circle2 = new THREE.LineSegments(edges2, material);
+    const circle3 = new THREE.LineSegments(edges3, material);
+
+    // Assign names
+    circle1.name = 'centerCircle';
+    circle2.name = 'innerCircle';
+    circle3.name = 'outerCircle';
+    
+    // Position circles at the center of your node layout
+    circle1.position.set(0, 0, 0); 
+    circle2.position.set(0, 0, 0);
+    circle3.position.set(0, 0, 0); 
+    
+    // Add circles to the graph scene
+    Graph.scene().add(circle1);
+    Graph.scene().add(circle2);
+    Graph.scene().add(circle3);
+}
+  </script>
+</body>
