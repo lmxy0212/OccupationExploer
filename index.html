@@ -32,29 +32,6 @@
     <p id="description"></p>
     <p id="keywords"></p>
   </div>
-  <div style="position: fixed; bottom: 10px; right: 10px; background-color: transparent; color: #fff; text-align: right; padding: 5px;">
-    <!-- <p id="warning" style="color: red; display: none;">All weights should add up to one</p> -->
-    <div class="slider-container">
-      <label for="interests">Interests: <output id="output-interests">0.2</output></label>
-      <input type="range" id="interests" name="interests" min="0" max="1" step="0.1" value="0.2">
-  </div>
-  <div class="slider-container">
-      <label for="knowledge">Knowledge: <output id="output-knowledge">0.2</output></label>
-      <input type="range" id="knowledge" name="knowledge" min="0" max="1" step="0.1" value="0.2">
-  </div>
-  <div class="slider-container">
-      <label for="skills">Skills: <output id="output-skills">0.2</output></label>
-      <input type="range" id="skills" name="skills" min="0" max="1" step="0.1" value="0.2">
-  </div>
-  <div class="slider-container">
-      <label for="workValues">Work Values: <output id="output-workValues">0.2</output></label>
-      <input type="range" id="workValues" name="workValues" min="0" max="1" step="0.1" value="0.2">
-  </div>
-  <div class="slider-container">
-      <label for="workTasks">Work Tasks: <output id="output-workTasks">0.2</output></label>
-      <input type="range" id="workTasks" name="workTasks" min="0" max="1" step="0.1" value="0.2">
-  </div>
-</div>
 
   
   <style>
@@ -104,14 +81,7 @@
           width: 80%;
           margin-bottom: 20px;
       }
-      .slider-container input[type=range] {
-        width: 100px;
-    }
-    .slider-container label, .slider-container output {
-        display: block;
-        text-align: center;
-        margin-bottom: 10px;
-    }
+
     /* #warning {
         color: red;
     } */
@@ -256,32 +226,7 @@ let weightVector = {
         // const totalWeight = Object.values(weightVector).reduce((sum, w) => sum + w, 0);
         // document.getElementById('warning').style.display = (Math.abs(totalWeight - 1) <= 0.01) ? 'none' : 'block';
     }
-    
 
-    // Add event listeners to update the weight vector and output when sliders are moved
-    document.getElementById('interests').addEventListener('input', function (e) {
-        weightVector['Interests'] = parseFloat(e.target.value);
-        document.getElementById('output-interests').innerText = e.target.value;
-    });
-    document.getElementById('knowledge').addEventListener('input', function (e) {
-        weightVector['Knowledge'] = parseFloat(e.target.value);
-        document.getElementById('output-knowledge').innerText = e.target.value;
-    });
-    document.getElementById('skills').addEventListener('input', function (e) {
-        weightVector['Skills'] = parseFloat(e.target.value);
-        document.getElementById('output-skills').innerText = e.target.value;
-    });
-    document.getElementById('workValues').addEventListener('input', function (e) {
-        weightVector['Work Values'] = parseFloat(e.target.value);
-        document.getElementById('output-workValues').innerText = e.target.value;
-    });
-    document.getElementById('workTasks').addEventListener('input', function (e) {
-        weightVector['Work Tasks'] = parseFloat(e.target.value);
-        document.getElementById('output-workTasks').innerText = e.target.value;
-    });
-
-
-    
 
     async function loadCSV(path) {
     return d3.csv(path).then(data => {
