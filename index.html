@@ -11,6 +11,9 @@
 
   <!-- <script src="dataformating-worktasks.js"></script> -->
   <!-- <script src="dataformating-skill_knowledge.js"></script>  -->
+
+  <!-- <script src="dataformating.js"></script>  -->
+
     <script src="dataformating-skill_knowledge_revised.js"></script> 
 
   
@@ -121,32 +124,33 @@
         createDropdown();
     });
     //Define GUI
-    const Settings = function() {
-      this.strength = 20;
-    };
+    // const Settings = function() {
+    //   this.strength = 20;
+    // };
 
-    const linkForce = Graph
-      .d3Force('link')
-      .distance(link => settings.strength);
+    // const linkForce = Graph
+    //   .d3Force('link')
+    //   .distance(link => settings.strength);
 
-    const colorParam = {
-      backgroundColor: Graph.backgroundColor(),
-    };
+    // const colorParam = {
+    //   backgroundColor: Graph.backgroundColor(),
+    // };
 
-    const settings = new Settings();
-    const gui = new dat.GUI();
+    // const settings = new Settings();
+    // const gui = new dat.GUI();
 
-    const controllerOne = gui.add(settings, 'strength', 0, 100);
-    const controller2 = gui.addColor(colorParam, 'backgroundColor').onChange((value) => Graph.backgroundColor(value.toString()));
+    // const controllerOne = gui.add(settings, 'strength', 0, 100);
+    // const controller2 = gui.addColor(colorParam, 'backgroundColor').onChange((value) => Graph.backgroundColor(value.toString()));
 
-    controllerOne.onChange(updateLinkDistance);
+    // controllerOne.onChange(updateLinkDistance);
 
     let selectedNode = null;
     let selectedLinks = [];
     function initializeForceGraph(data){
       Graph = ForceGraph3D()
       // .backgroundColor('#101020')
-      .backgroundColor('#000102')
+      // .backgroundColor('#000102')
+      .backgroundColor('#020202')
         (document.getElementById('3d-graph'))
           .graphData(data)
           .nodeAutoColorBy('group')
@@ -562,7 +566,7 @@ function createDropdown() {
     const geometry2 = new THREE.CircleGeometry(50, 500); 
     
     // Create material
-    const material = new THREE.LineBasicMaterial({ color: 0x202051 });
+    const material = new THREE.LineBasicMaterial({ color: 0x689AAA });
     
     // Create edge geometries
     const edges1 = new THREE.EdgesGeometry(geometry1);
