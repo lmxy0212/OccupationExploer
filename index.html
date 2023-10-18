@@ -35,7 +35,6 @@
     <p id="description"></p>
     <p id="keywords"></p>
   </div>
-
   
   <style>
       #searchInput {
@@ -230,7 +229,6 @@ let weightVector = {
         // const totalWeight = Object.values(weightVector).reduce((sum, w) => sum + w, 0);
         // document.getElementById('warning').style.display = (Math.abs(totalWeight - 1) <= 0.01) ? 'none' : 'block';
     }
-
 
     async function loadCSV(path) {
     return d3.csv(path).then(data => {
@@ -456,7 +454,7 @@ function highlightNode(node) {
 
         Graph.graphData(graphData);
         positionNodes(targetNode, neighbors, secondDegreeNeighbors);
-        zoominToNode(targetNode, 500);
+        zoominToNode(targetNode, 700);
         
     }  else {
         console.log(`Node with ID ${targetNode.id} not found!`);
@@ -566,7 +564,9 @@ function createDropdown() {
     const geometry2 = new THREE.CircleGeometry(50, 500); 
     
     // Create material
-    const material = new THREE.LineBasicMaterial({ color: 0x689AAA });
+    // const material = new THREE.LineBasicMaterial({ color: 0x202051 });
+    const material = new THREE.LineDashedMaterial({ color: 0x007AB8, linewidth: 5, dashSize: 5, gapSize: 5  });
+    const material2 = new THREE.LineDashedMaterial({ color: 0x181C8C1, linewidth: 5, dashSize: 5, gapSize: 5  });
     
     // Create edge geometries
     const edges1 = new THREE.EdgesGeometry(geometry1);
@@ -574,9 +574,14 @@ function createDropdown() {
     const edges3 = new THREE.EdgesGeometry(geometry3);
     
     // Create line segments (wireframe circles)
-    const circle1 = new THREE.LineSegments(edges1, material);
+    // const circle1 = new THREE.LineSegments(edges1, material);
+    const circle1 = new THREE.LineSegments(edges1, material2);
     const circle2 = new THREE.LineSegments(edges2, material);
     const circle3 = new THREE.LineSegments(edges3, material);
+
+    circle1.computeLineDistances();
+    circle2.computeLineDistances();
+    circle3.computeLineDistances();
 
     // Assign names
     circle1.name = 'centerCircle';
